@@ -1,18 +1,33 @@
-import asyncio
-import os
+import base64
+import httpx
 from state import AgentState
-from config import SKILLS_PATH
+from config import GITHUB_TOKEN, GITHUB_REPO, SKILLS_GITHUB_PATH
 
 
-def _load_skills(path: str) -> str:
-    if not os.path.isdir(path):
+async def _fetch_skills_from_github() -> str:
+    if not GITHUB_TOKEN:
         return ""
-    skills = []
-    for filename in sorted(os.listdir(path)):
-        if filename.endswith(".md"):
-            filepath = os.path.join(path, filename)
-            with open(filepath, "r") as f:
-                skills.append(f"# {filename}\n{f.read()}")
+
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+    encoded_path = SKILLS_GITHUB_PATH.replace(" ", "%20")
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{encoded_path}"
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url, headers=headers)
+        resp.raise_for_status()
+        items = resp.json()
+
+        skills = []
+        for item in sorted(items, key=lambda x: x["name"]):
+            if item["type"] == "file" and item["name"].endswith(".md"):
+                file_resp = await client.get(item["url"], headers=headers)
+                file_resp.raise_for_status()
+                content = base64.b64decode(file_resp.json()["content"]).decode("utf-8")
+                skills.append(f"# {item['name']}\n{content}")
+
     return "\n\n".join(skills)
 
 
@@ -20,7 +35,7 @@ async def skill_loader(state: AgentState) -> dict:
     if state.get("error"):
         return {}
     try:
-        skills = await asyncio.to_thread(_load_skills, SKILLS_PATH)
+        skills = await _fetch_skills_from_github()
         if not skills:
             return {
                 "skills": "",
@@ -28,7 +43,7 @@ async def skill_loader(state: AgentState) -> dict:
             }
         return {
             "skills": skills,
-            "logs": [f"skill_loader: loaded skills from {SKILLS_PATH}"],
+            "logs": [f"skill_loader: loaded skills from {GITHUB_REPO}/{SKILLS_GITHUB_PATH}"],
         }
     except Exception as e:
         return {

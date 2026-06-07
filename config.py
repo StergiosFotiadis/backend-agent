@@ -7,4 +7,6 @@ MODEL_NAME = "claude-sonnet-4-6"
 TEMPERATURE = 0
 MAX_RETRIES = 3
 
-SKILLS_PATH = os.path.join(os.path.dirname(__file__), "skills")
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+GITHUB_REPO = "TechFlow-Labs/techflowlabs-knowledge"
+SKILLS_GITHUB_PATH = "Software Dev/Projects/Wedding Plan"

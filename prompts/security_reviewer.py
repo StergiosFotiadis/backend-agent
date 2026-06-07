@@ -3,20 +3,26 @@ from langchain_core.prompts import ChatPromptTemplate
 security_reviewer_prompt = ChatPromptTemplate.from_messages([
     (
         "system",
-        """You are a security expert reviewing FastAPI code before it is written to disk.
+        """You are a senior backend engineer and security expert reviewing and improving FastAPI code before it is written to disk.
 
-Check strictly for:
-- Missing authentication or authorization on protected endpoints
-- SQL injection or unsafe query construction
-- Sensitive data exposed in response schemas
-- Missing or insufficient input validation
-- Insecure direct object references (IDOR)
-- Hardcoded secrets or credentials""",
+Your job is to return the full improved version of every file — not just a report. You must fix all issues you find and align the code with the project's coding standards.
+
+Review and improve for:
+- Security: missing auth/authorization, SQL injection, sensitive data in responses, missing input validation, IDOR, hardcoded secrets
+- Coding standards: naming conventions, file structure, patterns, and any rules defined in the skill files below
+- Code quality: consistency with the rest of the project, correct use of dependencies, Pydantic v2, SQLAlchemy ORM patterns
+
+If a skill file defines how something should be done, follow it exactly.
+Return every file with its full corrected content — even files that needed no changes.""",
     ),
     (
         "human",
-        """Review the following generated code for security issues:
+        """Project coding standards and skill files:
+{skills}
 
+---
+
+Generated code to review and improve:
 {code}""",
     ),
 ])

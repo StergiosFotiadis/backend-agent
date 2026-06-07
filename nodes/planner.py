@@ -24,13 +24,17 @@ async def planner(state: AgentState) -> dict:
     if state.get("error"):
         return {}
     try:
-        project_structure = await asyncio.to_thread(_scan_project, state["project_path"])
+        project_structure = await asyncio.to_thread(
+            _scan_project, state["project_path"]
+        )
         chain = planner_prompt | llm.with_structured_output(PlannerOutput)
-        result: PlannerOutput = await chain.ainvoke({
-            "project_path": state["project_path"],
-            "project_structure": project_structure,
-            "request": state["request"],
-        })
+        result: PlannerOutput = await chain.ainvoke(
+            {
+                "project_path": state["project_path"],
+                "project_structure": project_structure,
+                "request": state["request"],
+            }
+        )
         return {
             "project_structure": project_structure,
             "plan": result.model_dump_json(indent=2),
